@@ -23,6 +23,12 @@ export function getWebsitePage(domain: string, path: string, pageData: PageData)
           background: #ffffff;
           color: #000000;
         }
+        body.loading {
+          cursor: wait;
+        }
+        body.loading * {
+          cursor: wait !important;
+        }
         .container {
           width: 760px;
           margin: 0 auto;
@@ -166,6 +172,24 @@ export function getWebsitePage(domain: string, path: string, pageData: PageData)
           <a href="mailto:webmaster@${domain}">Email the Webmaster</a></p>
         </div>
       </div>
+      
+      <script>
+        // Add loading cursor when clicking navigation links
+        document.querySelectorAll('.nav-link').forEach(function(link) {
+          link.addEventListener('click', function() {
+            document.body.classList.add('loading');
+          });
+        });
+        
+        // Add loading cursor when clicking footer links (except mailto)
+        document.querySelectorAll('.footer a').forEach(function(link) {
+          if (!link.href.startsWith('mailto:')) {
+            link.addEventListener('click', function() {
+              document.body.classList.add('loading');
+            });
+          }
+        });
+      </script>
     </body>
     </html>
   `;

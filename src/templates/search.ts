@@ -12,6 +12,12 @@ export function getSearchPage(): string {
           padding: 20px; 
           background: #fff; 
         }
+        body.loading {
+          cursor: wait;
+        }
+        body.loading * {
+          cursor: wait !important;
+        }
         .container { 
           max-width: 600px; 
           margin: 100px auto; 
@@ -83,6 +89,18 @@ export function getSearchPage(): string {
       <div class="footer">
         Fake WWW © 2003 - Bringing you the best of the web that never existed
       </div>
+      
+      <script>
+        // Add loading cursor when form is submitted
+        document.querySelector('form').addEventListener('submit', function() {
+          document.body.classList.add('loading');
+        });
+        
+        // Add loading cursor for "I'm Feeling Fake" button
+        document.querySelector('input[value="I\\'m Feeling Fake"]').addEventListener('click', function() {
+          document.body.classList.add('loading');
+        });
+      </script>
     </body>
     </html>
   `;
@@ -111,6 +129,12 @@ export function getSearchResultsPage(query: string, results: Array<{title: strin
           margin: 0; 
           padding: 0; 
           background: #fff; 
+        }
+        body.loading {
+          cursor: wait;
+        }
+        body.loading * {
+          cursor: wait !important;
         }
         .header {
           padding: 6px 16px;
@@ -204,6 +228,25 @@ export function getSearchResultsPage(query: string, results: Array<{title: strin
         <div class="stats">About ${results.length} results (0.42 seconds)</div>
         ${resultsHtml}
       </div>
+      
+      <script>
+        // Add loading cursor when search form is submitted
+        document.querySelector('.search-form').addEventListener('submit', function() {
+          document.body.classList.add('loading');
+        });
+        
+        // Add loading cursor when clicking on result links
+        document.querySelectorAll('.result-title a').forEach(function(link) {
+          link.addEventListener('click', function() {
+            document.body.classList.add('loading');
+          });
+        });
+        
+        // Add loading cursor when clicking logo to go back
+        document.querySelector('.logo-small').addEventListener('click', function() {
+          document.body.classList.add('loading');
+        });
+      </script>
     </body>
     </html>
   `;
