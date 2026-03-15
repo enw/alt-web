@@ -1,10 +1,10 @@
 import fastify from 'fastify';
 import path from 'path';
 import { config } from 'dotenv';
-import { AIService } from './services/ai';
+import { AIService, SearchResult, GeneratedPage } from './services/ai';
 import { SimpleCache } from './services/cache';
 import { getSearchPage, getSearchResultsPage } from './templates/search';
-import { getWebsitePage } from './templates/website';
+import { getWebsitePage, PageData } from './templates/website';
 
 // Load environment variables
 config();
@@ -62,7 +62,7 @@ async function generateSearchResults(query: string): Promise<string> {
   const cacheKey = SimpleCache.searchKey(query);
   
   // Check cache first
-  let results = cache.get(cacheKey);
+  let results = cache.get<SearchResult[]>(cacheKey);
   
   if (!results) {
     console.log(`Generating search results for: ${query}`);
@@ -84,11 +84,17 @@ async function generatePage(pagePath: string): Promise<string> {
   const cacheKey = SimpleCache.pageKey(domain, path);
   
   // Check cache first
-  let pageData = cache.get(cacheKey);
+  let pageData = cache.get<PageData>(cacheKey);
   
   if (!pageData) {
     console.log(`Generating page: ${pagePath}`);
-    pageData = await aiService.generatePage(domain, path);
+    const generatedPage = await aiService.generatePage(domain, path);
+    // Convert GeneratedPage to PageData format
+    pageData = {
+      title: generatedPage.title,
+      content: generatedPage.content,
+      navigation: generatedPage.navigation
+    };
     cache.set(cacheKey, pageData, 60); // Cache for 1 hour
   } else {
     console.log(`Using cached page: ${pagePath}`);
@@ -102,7 +108,7 @@ const start = async () => {
   try {
     const port = parseInt(process.env.PORT || '3003');
     await server.listen({ port, host: '0.0.0.0' });
-    console.log(\`🚀 Fake WWW server running at http://localhost:\${port}\`);
+    console.log(`🚀 Fake WWW server running at http://localhost:${port}`);
   } catch (err) {
     server.log.error(err);
     process.exit(1);
