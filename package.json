@@ -9,6 +9,7 @@
     "start": "node dist/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "packageManager": "pnpm@10.30.2",
   "keywords": ["search", "ai", "retro", "fake", "vintage", "web"],
   "author": "",
   "license": "MIT",
