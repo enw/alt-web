@@ -156,7 +156,7 @@ export function getSearchPage(): string {
         <hr style="margin: 20px 0; border: none; border-top: 1px solid #dadce0;">
         
         <p style="margin: 0; font-size: 12px; color: #70757a;">
-          Fake WWW © 2003 - Bringing you the best of the web that never existed
+          Fake WWW © 2026 e10d, LLC - Bringing you the best of the web that never existed
         </p>
       </div>
       
