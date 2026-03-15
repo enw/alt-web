@@ -1,24 +1,10 @@
-import { TemplateSelector } from '../services/template-selector';
-
 export interface PageData {
   title: string;
   content: string;
   navigation: Array<{ text: string; url: string }>;
 }
 
-const templateSelector = new TemplateSelector();
-
-export function getWebsitePage(domain: string, path: string, pageData: PageData): string {
-  // Use template selector to pick the best template for this domain/content
-  const selectedTemplate = templateSelector.selectTemplate(domain, pageData.content);
-  
-  console.log(`Using ${selectedTemplate.name} template for ${domain}${path}`);
-  
-  return selectedTemplate.template(domain, path, pageData);
-}
-
-// Legacy function for backward compatibility - now uses template selector
-export function getCorporateWebsitePage(domain: string, path: string, pageData: PageData): string {
+export function getCorporateTemplate(domain: string, path: string, pageData: PageData): string {
   const navHtml = pageData.navigation.map(nav => 
     `<a href="/?p=${encodeURIComponent(nav.url)}" class="nav-link">${escapeHtml(nav.text)}</a>`
   ).join(' | ');
@@ -210,11 +196,8 @@ export function getCorporateWebsitePage(domain: string, path: string, pageData: 
 }
 
 function getCompanyName(domain: string): string {
-  // Extract company name from domain
   const parts = domain.replace('www.', '').split('.');
   const name = parts[0];
-  
-  // Convert to title case
   return name.split('-').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
