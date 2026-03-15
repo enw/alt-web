@@ -24,6 +24,14 @@ export interface GeneratedPage {
   navigation: Array<{ text: string; url: string }>;
 }
 
+export interface PageContext {
+  searchQuery?: string;
+  referrerDomain?: string;
+  referrerPage?: string;
+  templateType?: string;
+  previousPages?: string[];
+}
+
 export class AIService {
   private useOpenAI: boolean;
   private ollamaHost: string;
@@ -48,7 +56,12 @@ export class AIService {
     console.log(`AI Service initialized with: ${this.useOpenAI ? 'OpenAI' : 'Ollama'}`);
   }
 
-  async generateSearchResults(query: string): Promise<SearchResult[]> {
+  async generateSearchResults(query: string, context?: PageContext): Promise<SearchResult[]> {
+    let contextInfo = '';
+    if (context?.referrerDomain) {
+      contextInfo = `\n\nContext: This search is being performed from ${context.referrerDomain}, so consider including related or complementary businesses that might be found in a similar context.`;
+    }
+    
     const prompt = `Generate 8 realistic fake search results for the query: "${query}"
 
 Return ONLY a valid JSON array with this exact format:
@@ -60,7 +73,8 @@ Return ONLY a valid JSON array with this exact format:
   }
 ]
 
-Make the companies feel authentic but entirely fictional. Include various business types (startups, established companies, services, etc.). Ensure URLs are simple domains without paths.`;
+Make the companies feel authentic but entirely fictional. Include various business types (startups, established companies, services, etc.). Ensure URLs are simple domains without paths. Make sure the results are relevant to the search query "${query}".${contextInfo}`;
+    
 
     try {
       const response = await this.callAI(prompt);
@@ -78,8 +92,24 @@ Make the companies feel authentic but entirely fictional. Include various busine
     }
   }
 
-  async generatePage(domain: string, path: string = ''): Promise<GeneratedPage> {
+  async generatePage(domain: string, path: string = '', context?: PageContext): Promise<GeneratedPage> {
     const fullPath = path ? `${domain}${path}` : domain;
+    
+    // Build context information for better generation
+    let contextInfo = '';
+    if (context?.searchQuery) {
+      contextInfo += `\nContext: This website was found through a search for "${context.searchQuery}". Make sure the content is relevant to that search.`;
+    }
+    if (context?.referrerDomain && context.referrerDomain !== domain) {
+      contextInfo += `\nReferrer: User came from ${context.referrerDomain}, so this site might be related or linked to that domain.`;
+    }
+    if (context?.templateType) {
+      contextInfo += `\nTemplate: This will use the ${context.templateType} template, so tailor content accordingly (e.g., academic content for academic template).`;
+    }
+    if (context?.previousPages && context.previousPages.length > 0) {
+      contextInfo += `\nPrevious pages visited: ${context.previousPages.slice(-3).join(', ')} - maintain consistency with the established narrative.`;
+    }
+    
     const prompt = `Generate realistic content for a fake website: ${fullPath}
 
 Create content for ${path || 'homepage'} of ${domain}. 
@@ -96,7 +126,8 @@ Return ONLY valid JSON in this format:
   ]
 }
 
-Make the content professional but with that early web feel. Include company mission, services, or product information as appropriate.`;
+Make the content professional but with that early web feel. Include company mission, services, or product information as appropriate.${contextInfo}`;
+    
 
     try {
       const response = await this.callAI(prompt);

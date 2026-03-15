@@ -230,15 +230,80 @@ export function getSearchResultsPage(query: string, results: Array<{title: strin
       </div>
       
       <script>
-        // Add loading cursor when search form is submitted
-        document.querySelector('.search-form').addEventListener('submit', function() {
+        // Add loading cursor and context when search form is submitted
+        document.querySelector('.search-form').addEventListener('submit', function(e) {
+          e.preventDefault();
           document.body.classList.add('loading');
+          
+          const query = e.target.querySelector('input[name="q"]').value;
+          
+          // Send context via POST
+          const context = {
+            referrerDomain: window.location.hostname,
+            referrerPage: window.location.href
+          };
+          
+          fetch('/search', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              query: query,
+              context: context
+            })
+          })
+          .then(response => response.text())
+          .then(html => {
+            document.open();
+            document.write(html);
+            document.close();
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            // Fallback to GET request
+            window.location.href = '/?q=' + encodeURIComponent(query);
+          });
         });
         
-        // Add loading cursor when clicking on result links
+        // Add loading cursor and context when clicking on result links
         document.querySelectorAll('.result-title a').forEach(function(link) {
-          link.addEventListener('click', function() {
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
             document.body.classList.add('loading');
+            
+            // Extract domain from the href
+            const href = link.getAttribute('href');
+            const urlParams = new URLSearchParams(href.split('?')[1]);
+            const domain = urlParams.get('p');
+            
+            // Send context via POST
+            const context = {
+              searchQuery: '${escapeHtml(query)}',
+              referrerDomain: window.location.hostname,
+              referrerPage: window.location.href
+            };
+            
+            fetch('/page', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                domain: domain,
+                context: context
+              })
+            })
+            .then(response => response.text())
+            .then(html => {
+              document.open();
+              document.write(html);
+              document.close();
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              window.location.href = href; // Fallback to GET request
+            });
           });
         });
         

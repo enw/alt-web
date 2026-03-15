@@ -1,4 +1,5 @@
 import { TemplateSelector } from '../services/template-selector';
+import { getContextNavigationScript } from './context-navigation';
 
 export interface PageData {
   title: string;
@@ -14,7 +15,13 @@ export function getWebsitePage(domain: string, path: string, pageData: PageData)
   
   console.log(`Using ${selectedTemplate.name} template for ${domain}${path}`);
   
-  return selectedTemplate.template(domain, path, pageData);
+  let html = selectedTemplate.template(domain, path, pageData);
+  
+  // Inject context-aware navigation script
+  const contextScript = getContextNavigationScript(domain);
+  html = html.replace('</body>', `<script>${contextScript}</script></body>`);
+  
+  return html;
 }
 
 // Legacy function for backward compatibility - now uses template selector

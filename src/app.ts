@@ -1,7 +1,7 @@
 import fastify from 'fastify';
 import path from 'path';
 import { config } from 'dotenv';
-import { AIService, SearchResult, GeneratedPage } from './services/ai';
+import { AIService, SearchResult, GeneratedPage, PageContext } from './services/ai';
 import { SimpleCache } from './services/cache';
 import { getSearchPage, getSearchResultsPage } from './templates/search';
 import { getWebsitePage, PageData } from './templates/website';
@@ -33,7 +33,7 @@ server.get('/health', async (request, reply) => {
   };
 });
 
-// Main search page
+// Main search page (GET)
 server.get('/', async (request, reply) => {
   const { q, p } = request.query as { q?: string; p?: string };
   
@@ -52,13 +52,30 @@ server.get('/', async (request, reply) => {
   }
 });
 
+// Enhanced endpoints with context support (POST)
+server.post('/search', async (request, reply) => {
+  const { query, context } = request.body as { query: string; context?: PageContext };
+  const searchResults = await generateSearchResults(query, context);
+  reply.type('text/html').send(searchResults);
+});
+
+server.post('/page', async (request, reply) => {
+  const { domain, path, context } = request.body as { 
+    domain: string; 
+    path?: string; 
+    context?: PageContext 
+  };
+  const pageContent = await generatePage(domain + (path || ''), context);
+  reply.type('text/html').send(pageContent);
+});
+
 // Cache cleanup endpoint (for debugging)
 server.get('/admin/cache/cleanup', async (request, reply) => {
   const deletedCount = cache.cleanup();
   return { deletedEntries: deletedCount, timestamp: new Date().toISOString() };
 });
 
-async function generateSearchResults(query: string): Promise<string> {
+async function generateSearchResults(query: string, context?: PageContext): Promise<string> {
   const cacheKey = SimpleCache.searchKey(query);
   
   // Check cache first
@@ -66,7 +83,7 @@ async function generateSearchResults(query: string): Promise<string> {
   
   if (!results) {
     console.log(`Generating search results for: ${query}`);
-    results = await aiService.generateSearchResults(query);
+    results = await aiService.generateSearchResults(query, context);
     cache.set(cacheKey, results, 30); // Cache for 30 minutes
   } else {
     console.log(`Using cached search results for: ${query}`);
@@ -75,7 +92,7 @@ async function generateSearchResults(query: string): Promise<string> {
   return getSearchResultsPage(query, results);
 }
 
-async function generatePage(pagePath: string): Promise<string> {
+async function generatePage(pagePath: string, context?: PageContext): Promise<string> {
   // Parse domain and path from the page parameter
   const parts = pagePath.split('/');
   const domain = parts[0];
@@ -88,7 +105,7 @@ async function generatePage(pagePath: string): Promise<string> {
   
   if (!pageData) {
     console.log(`Generating page: ${pagePath}`);
-    const generatedPage = await aiService.generatePage(domain, path);
+    const generatedPage = await aiService.generatePage(domain, path, context);
     // Convert GeneratedPage to PageData format
     pageData = {
       title: generatedPage.title,
