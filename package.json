@@ -1,0 +1,25 @@
+{
+  "name": "fake-www",
+  "version": "1.0.0",
+  "description": "AI-powered vintage search engine with generated fake websites",
+  "main": "dist/app.js",
+  "scripts": {
+    "dev": "tsx watch src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["search", "ai", "retro", "fake", "vintage", "web"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "fastify": "^4.24.3",
+    "@fastify/static": "^6.12.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.9.0",
+    "typescript": "^5.2.2",
+    "tsx": "^4.6.0"
+  }
+}
