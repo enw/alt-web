@@ -60,13 +60,70 @@ export function getSearchPage(): string {
           border: 1px solid #dadce0;
           box-shadow: 0 1px 1px rgba(0,0,0,.1);
         }
+        .example-sites {
+          margin-top: 40px;
+          text-align: center;
+        }
+        .example-sites h3 {
+          color: #70757a;
+          font-size: 16px;
+          margin-bottom: 15px;
+        }
+        .examples-row {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin-bottom: 15px;
+        }
+        .example-link {
+          display: inline-block;
+          padding: 8px 16px;
+          text-decoration: none;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: bold;
+          transition: transform 0.2s ease;
+        }
+        .example-link:hover {
+          transform: translateY(-2px);
+          text-decoration: underline;
+        }
+        .example-link.startup {
+          background: linear-gradient(45deg, #001122, #003366);
+          color: #00ffff;
+          border: 1px solid #00ffff;
+        }
+        .example-link.academic {
+          background: #f0f0e8;
+          color: #8b4513;
+          border: 1px solid #cccccc;
+        }
+        .example-link.personal {
+          background: linear-gradient(45deg, #ffccff, #ccffff);
+          color: #660033;
+          border: 2px ridge #ff6699;
+        }
+        .example-link.corporate {
+          background: #003366;
+          color: #ffffff;
+          border: 1px solid #cccccc;
+        }
+        .example-link.geocities {
+          background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+          color: #ffffff;
+          border: 2px outset #daa520;
+          text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+        }
+        .examples-note {
+          font-size: 11px;
+          color: #999999;
+          font-style: italic;
+          margin-top: 10px;
+        }
         .footer {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: #f2f2f2;
-          padding: 15px;
+          margin-top: 50px;
+          padding: 20px;
           text-align: center;
           font-size: 12px;
           color: #70757a;
@@ -84,6 +141,18 @@ export function getSearchPage(): string {
           <input type="submit" value="Fake Search" class="search-btn">
           <input type="submit" value="I'm Feeling Fake" class="search-btn" onclick="document.querySelector('input[name=q]').value='random tech startup'">
         </form>
+        
+        <div class="example-sites">
+          <h3>Try these example sites:</h3>
+          <div class="examples-row">
+            <a href="/?p=www.techstartupinc.com" class="example-link startup">TechStartup Inc</a>
+            <a href="/?p=www.smithsuniversity.edu" class="example-link academic">Smith's University</a>
+            <a href="/?p=www.johnsplace.com" class="example-link personal">John's Homepage</a>
+            <a href="/?p=www.megacorp-solutions.com" class="example-link corporate">MegaCorp Solutions</a>
+            <a href="/?p=www.awesomeness.com" class="example-link geocities">~Awesomeness~</a>
+          </div>
+          <p class="examples-note">Each site uses a different vintage web template!</p>
+        </div>
       </div>
       
       <div class="footer">
@@ -99,6 +168,51 @@ export function getSearchPage(): string {
         // Add loading cursor for "I'm Feeling Fake" button
         document.querySelector('input[value="I\\'m Feeling Fake"]').addEventListener('click', function() {
           document.body.classList.add('loading');
+        });
+        
+        // Add context-aware navigation for example site links
+        document.querySelectorAll('.example-link').forEach(function(link) {
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.body.classList.add('loading');
+            
+            // Extract domain from href
+            const href = link.getAttribute('href');
+            const urlParams = new URLSearchParams(href.split('?')[1]);
+            const domain = urlParams.get('p');
+            
+            // Send context indicating this is an example site visit
+            const context = {
+              referrerDomain: window.location.hostname,
+              referrerPage: window.location.href,
+              templateType: link.classList.contains('startup') ? 'startup' :
+                           link.classList.contains('academic') ? 'academic' :
+                           link.classList.contains('personal') ? 'personal' :
+                           link.classList.contains('corporate') ? 'corporate' :
+                           link.classList.contains('geocities') ? 'geocities' : undefined
+            };
+            
+            fetch('/page', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                domain: domain,
+                context: context
+              })
+            })
+            .then(response => response.text())
+            .then(html => {
+              document.open();
+              document.write(html);
+              document.close();
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              window.location.href = href; // Fallback to GET request
+            });
+          });
         });
       </script>
     </body>
