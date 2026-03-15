@@ -31,7 +31,7 @@ http://localhost:3003/?p=www.example.com/contact # Generated contact page
 
 - **Framework**: Fastify (minimalist web framework)
 - **Language**: TypeScript
-- **AI Integration**: Ollama with qwen2.5-coder:14b (or hosted models)
+- **AI Integration**: Ollama with qwen2.5-coder:14b (default) or OpenAI GPT models
 - **Styling**: Vanilla CSS with retro design patterns
 - **Template Engine**: Built-in HTML generation
 
@@ -74,23 +74,33 @@ http://localhost:3003/?p=www.example.com/contact # Generated contact page
 ## Installation
 
 ```bash
-npm install
+pnpm install
 ```
 
 ## Configuration
 
-Create a `.env` file with your AI service configuration:
+Create a `.env` file with your AI service configuration. Choose either Ollama (local) or OpenAI (hosted):
 
+### Option 1: Ollama (Default - Free, Local)
 ```env
-# For Ollama (default)
+# Ollama Configuration (default - local AI)
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_MODEL=qwen2.5-coder:14b
 PORT=3003
-
-# Optional: For hosted models
-# OPENAI_API_KEY=your_openai_api_key_here
-# ANTHROPIC_API_KEY=your_anthropic_api_key_here
 ```
+
+### Option 2: OpenAI (Hosted - Requires API Key)
+```env
+# OpenAI Configuration (alternative - hosted AI)
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4o-mini
+PORT=3003
+
+# Optional: Use different OpenAI-compatible endpoint
+# OPENAI_BASE_URL=https://api.openai.com/v1
+```
+
+The service automatically detects which provider to use based on whether `OPENAI_API_KEY` is set.
 
 ## Development
 

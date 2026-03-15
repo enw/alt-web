@@ -4,6 +4,14 @@ export interface OllamaResponse {
   done: boolean;
 }
 
+export interface OpenAIResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+}
+
 export interface SearchResult {
   title: string;
   url: string;
@@ -17,12 +25,27 @@ export interface GeneratedPage {
 }
 
 export class AIService {
+  private useOpenAI: boolean;
   private ollamaHost: string;
-  private model: string;
+  private ollamaModel: string;
+  private openaiApiKey?: string;
+  private openaiModel: string;
+  private openaiBaseUrl: string;
 
   constructor() {
+    // Check if OpenAI is configured
+    this.openaiApiKey = process.env.OPENAI_API_KEY;
+    this.useOpenAI = !!this.openaiApiKey;
+    
+    // Ollama configuration
     this.ollamaHost = process.env.OLLAMA_HOST || 'http://localhost:11434';
-    this.model = process.env.OLLAMA_MODEL || 'qwen2.5-coder:14b';
+    this.ollamaModel = process.env.OLLAMA_MODEL || 'qwen2.5-coder:14b';
+    
+    // OpenAI configuration
+    this.openaiModel = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    this.openaiBaseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+    
+    console.log(`AI Service initialized with: ${this.useOpenAI ? 'OpenAI' : 'Ollama'}`);
   }
 
   async generateSearchResults(query: string): Promise<SearchResult[]> {
@@ -40,7 +63,7 @@ Return ONLY a valid JSON array with this exact format:
 Make the companies feel authentic but entirely fictional. Include various business types (startups, established companies, services, etc.). Ensure URLs are simple domains without paths.`;
 
     try {
-      const response = await this.callOllama(prompt);
+      const response = await this.callAI(prompt);
       const parsed = this.parseJsonResponse(response);
       
       if (Array.isArray(parsed) && parsed.length > 0) {
@@ -76,7 +99,7 @@ Return ONLY valid JSON in this format:
 Make the content professional but with that early web feel. Include company mission, services, or product information as appropriate.`;
 
     try {
-      const response = await this.callOllama(prompt);
+      const response = await this.callAI(prompt);
       const parsed = this.parseJsonResponse(response);
       
       if (parsed && parsed.title && parsed.content) {
@@ -90,6 +113,39 @@ Make the content professional but with that early web feel. Include company miss
     }
   }
 
+  private async callAI(prompt: string): Promise<string> {
+    if (this.useOpenAI) {
+      return this.callOpenAI(prompt);
+    } else {
+      return this.callOllama(prompt);
+    }
+  }
+
+  private async callOpenAI(prompt: string): Promise<string> {
+    const response = await fetch(`${this.openaiBaseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.openaiApiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.openaiModel,
+        messages: [
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 1500,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+
+    const data = await response.json() as OpenAIResponse;
+    return data.choices[0].message.content;
+  }
+
   private async callOllama(prompt: string): Promise<string> {
     const response = await fetch(`${this.ollamaHost}/api/generate`, {
       method: 'POST',
@@ -97,7 +153,7 @@ Make the content professional but with that early web feel. Include company miss
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: this.model,
+        model: this.ollamaModel,
         prompt,
         stream: false,
       }),
