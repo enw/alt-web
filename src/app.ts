@@ -1,6 +1,10 @@
 import fastify from 'fastify';
 import path from 'path';
 import { config } from 'dotenv';
+import { AIService } from './services/ai';
+import { SimpleCache } from './services/cache';
+import { getSearchPage, getSearchResultsPage } from './templates/search';
+import { getWebsitePage } from './templates/website';
 
 // Load environment variables
 config();
@@ -8,6 +12,10 @@ config();
 const server = fastify({ 
   logger: true 
 });
+
+// Initialize services
+const aiService = new AIService();
+const cache = new SimpleCache(60); // 1 hour TTL
 
 // Register static file serving
 server.register(require('@fastify/static'), {
@@ -17,7 +25,12 @@ server.register(require('@fastify/static'), {
 
 // Health check endpoint
 server.get('/health', async (request, reply) => {
-  return { status: 'ok', timestamp: new Date().toISOString() };
+  const cacheStats = cache.getStats();
+  return { 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    cache: cacheStats
+  };
 });
 
 // Main search page
@@ -39,43 +52,49 @@ server.get('/', async (request, reply) => {
   }
 });
 
-// Placeholder functions - will implement these next
-async function generatePage(path: string): Promise<string> {
-  return `<h1>Generated Page: ${path}</h1><p>Coming soon...</p>`;
-}
+// Cache cleanup endpoint (for debugging)
+server.get('/admin/cache/cleanup', async (request, reply) => {
+  const deletedCount = cache.cleanup();
+  return { deletedEntries: deletedCount, timestamp: new Date().toISOString() };
+});
 
 async function generateSearchResults(query: string): Promise<string> {
-  return `<h1>Search Results for: ${query}</h1><p>Coming soon...</p>`;
+  const cacheKey = SimpleCache.searchKey(query);
+  
+  // Check cache first
+  let results = cache.get(cacheKey);
+  
+  if (!results) {
+    console.log(`Generating search results for: ${query}`);
+    results = await aiService.generateSearchResults(query);
+    cache.set(cacheKey, results, 30); // Cache for 30 minutes
+  } else {
+    console.log(`Using cached search results for: ${query}`);
+  }
+  
+  return getSearchResultsPage(query, results);
 }
 
-function getSearchPage(): string {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Fake WWW - Search the Web</title>
-      <style>
-        body { font-family: arial, sans-serif; margin: 0; padding: 20px; background: #fff; }
-        .container { max-width: 600px; margin: 100px auto; text-align: center; }
-        .logo { font-size: 36px; color: #4285f4; margin-bottom: 20px; }
-        .search-box { width: 400px; padding: 10px; font-size: 16px; border: 2px solid #dfe1e5; border-radius: 24px; }
-        .search-btn { padding: 10px 20px; margin: 20px 5px; background: #f8f9fa; border: 1px solid #f8f9fa; border-radius: 4px; color: #3c4043; cursor: pointer; }
-        .search-btn:hover { border: 1px solid #dadce0; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="logo">Fake WWW</div>
-        <form method="GET">
-          <input type="text" name="q" class="search-box" placeholder="Search the fake web..." autocomplete="off">
-          <br>
-          <input type="submit" value="Fake Search" class="search-btn">
-          <button type="button" class="search-btn">I'm Feeling Fake</button>
-        </form>
-      </div>
-    </body>
-    </html>
-  `;
+async function generatePage(pagePath: string): Promise<string> {
+  // Parse domain and path from the page parameter
+  const parts = pagePath.split('/');
+  const domain = parts[0];
+  const path = parts.slice(1).join('/');
+  
+  const cacheKey = SimpleCache.pageKey(domain, path);
+  
+  // Check cache first
+  let pageData = cache.get(cacheKey);
+  
+  if (!pageData) {
+    console.log(`Generating page: ${pagePath}`);
+    pageData = await aiService.generatePage(domain, path);
+    cache.set(cacheKey, pageData, 60); // Cache for 1 hour
+  } else {
+    console.log(`Using cached page: ${pagePath}`);
+  }
+  
+  return getWebsitePage(domain, path, pageData);
 }
 
 // Start the server
