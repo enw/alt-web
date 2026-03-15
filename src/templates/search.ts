@@ -61,12 +61,7 @@ export function getSearchPage(): string {
           box-shadow: 0 1px 1px rgba(0,0,0,.1);
         }
         .example-sites {
-          margin-top: 40px;
           text-align: center;
-        }
-        .example-sites h3 {
-          color: #70757a;
-          font-size: 16px;
           margin-bottom: 15px;
         }
         .examples-row {
@@ -122,11 +117,13 @@ export function getSearchPage(): string {
           margin-top: 10px;
         }
         .footer {
-          margin-top: 50px;
-          padding: 20px;
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: #f8f9fa;
+          padding: 15px;
           text-align: center;
-          font-size: 12px;
-          color: #70757a;
           border-top: 1px solid #dadce0;
         }
       </style>
@@ -141,9 +138,11 @@ export function getSearchPage(): string {
           <input type="submit" value="Fake Search" class="search-btn">
           <input type="submit" value="I'm Feeling Fake" class="search-btn" onclick="document.querySelector('input[name=q]').value='random tech startup'">
         </form>
-        
+      </div>
+      
+      <div class="footer">
         <div class="example-sites">
-          <h3>Try these example sites:</h3>
+          <p style="margin-bottom: 15px; color: #70757a; font-size: 13px;">Try these example sites:</p>
           <div class="examples-row">
             <a href="/?p=www.techstartupinc.com" class="example-link startup">TechStartup Inc</a>
             <a href="/?p=www.smithsuniversity.edu" class="example-link academic">Smith's University</a>
@@ -153,10 +152,12 @@ export function getSearchPage(): string {
           </div>
           <p class="examples-note">Each site uses a different vintage web template!</p>
         </div>
-      </div>
-      
-      <div class="footer">
-        Fake WWW © 2003 - Bringing you the best of the web that never existed
+        
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #dadce0;">
+        
+        <p style="margin: 0; font-size: 12px; color: #70757a;">
+          Fake WWW © 2003 - Bringing you the best of the web that never existed
+        </p>
       </div>
       
       <script>
